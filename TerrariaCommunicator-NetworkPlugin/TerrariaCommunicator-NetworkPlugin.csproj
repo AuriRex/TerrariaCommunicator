@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net45;netcoreapp3.1</TargetFrameworks>
     <RootNamespace>TerrariaCommunicator_NetworkPlugin</RootNamespace>
     <LangVersion>8.0</LangVersion>
+    <Configurations>Debug;Release;tModLoader;TShock</Configurations>
   </PropertyGroup>
 
   <ItemGroup>

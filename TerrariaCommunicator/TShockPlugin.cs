@@ -1,5 +1,11 @@
-﻿extern alias TShockAssemblies; 
+﻿#if TSHOCK
+extern alias TShockAssemblies;
+
+using TShockAssemblies::Microsoft.Xna.Framework;
 using System;
+using TerrariaCommunicator_NetworkPlugin.Managers;
+using TerrariaCommunicator_NetworkPlugin.Models;
+using TerrariaCommunicator_NetworkPlugin.Packets;
 using TShockAssemblies::Terraria;
 using TShockAssemblies::TerrariaApi.Server;
 using TShockAssemblies::TShockAPI;
@@ -16,12 +22,12 @@ namespace TerrariaCommunicator
 
         public TShockPlugin(Main game) : base(game)
         {
-
+            
         }
 
         public override void Initialize()
         {
-            MessageManager.Init();
+            CommunicationManager.Instance.Initialize();
 
             ServerApi.Hooks.ServerJoin.Register(this, OnServerJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
@@ -37,14 +43,32 @@ namespace TerrariaCommunicator
                 if (args.Message == null) return;
                 if (args.Color == null) return;
 
-                //AsynchronousSocketSender.Send($"ServerBroadcast: {args.Message}\n{args.Color.ToString()}");
+                CommunicationManager.Instance.SendPacket(new BroadcastMessagePacket()
+                {
+                    PacketData = new BroadcastMessagePacket.Content
+                    {
+                        Message = args.Message.ToString(),
+                        Color = XNAColorToStruct(args.Color)
+                    }
+                });
             }
 
+        }
+
+        private ColorStruct XNAColorToStruct(Color color)
+        {
+            return new ColorStruct
+            {
+                R = color.R,
+                G = color.G,
+                B = color.B
+            };
         }
 
         private void OnGamePostInitialize(EventArgs args)
         {
             //AsynchronousSocketSender.Send("GamePostInitialize: true");
+            // TODO
         }
 
         public void SendMsg(string msg)
@@ -92,10 +116,18 @@ namespace TerrariaCommunicator
         {
             if (args != null)
             {
-                if (TShock.Players[args.Who] != null)
+                TSPlayer ply = TShock.Players[args.Who];
+                if (ply != null)
                 {
                     Console.WriteLine($"ServerJoin: {TShock.Players[args.Who].Name}");
-                    //AsynchronousSocketSender.Send($"ServerJoin: {TShock.Players[args.Who].Name}\n{TShock.Players[args.Who].IP}");
+                    CommunicationManager.Instance.SendPacket(new PlayerConnectionPacket()
+                    {
+                        PacketData = new PlayerConnectionPacket.Content
+                        {
+                            IsConnecting = true,
+                            PlayerInfo = CreatePlayerInfo(ply)
+                        }
+                    });
                 }
             }
         }
@@ -104,9 +136,17 @@ namespace TerrariaCommunicator
         {
             if (args != null)
             {
-                if (TShock.Players[args.Who] != null)
+                TSPlayer ply = TShock.Players[args.Who];
+                if (ply != null)
                 {
-                    //AsynchronousSocketSender.Send($"ServerLeave: {TShock.Players[args.Who].Name}\n{TShock.Players[args.Who].IP}");
+                    CommunicationManager.Instance.SendPacket(new PlayerConnectionPacket()
+                    {
+                        PacketData = new PlayerConnectionPacket.Content
+                        {
+                            IsConnecting = false,
+                            PlayerInfo = CreatePlayerInfo(ply)
+                        }
+                    });
                 }
             }
         }
@@ -115,11 +155,28 @@ namespace TerrariaCommunicator
         {
             if (args != null)
             {
-                if (TShock.Players[args.Who] != null)
+                TSPlayer ply = TShock.Players[args.Who];
+                if (ply != null)
                 {
-                    //AsynchronousSocketSender.Send($"ServerChat: {TShock.Players[args.Who].Name}\n{args.Text}");
+                    CommunicationManager.Instance.SendPacket(new ChatMessagePacket() {
+                        PacketData = new ChatMessagePacket.Content
+                        {
+                            Message = args.Text,
+                            PlayerInfo = CreatePlayerInfo(ply)
+                        }
+                    });
                 }
             }
+        }
+
+        private PlayerInfo CreatePlayerInfo(TSPlayer ply)
+        {
+            return new PlayerInfo
+            {
+                IsDead = ply.Dead,
+                Name = ply.Name,
+                UUID = ply.UUID
+            };
         }
 
         protected override void Dispose(bool disposing)
@@ -135,9 +192,10 @@ namespace TerrariaCommunicator
                 ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGamePostInitialize);
                 ServerApi.Hooks.ServerBroadcast.Deregister(this, OnServerBroadcast);
 
-                MessageManager.Dispose();
+                CommunicationManager.Instance.Dispose();
             }
             base.Dispose(disposing);
         }
     }
 }
+#endif
