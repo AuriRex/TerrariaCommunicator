@@ -1,0 +1,3 @@
+displayName = Communicator
+author = AuriRex
+version = 0.1

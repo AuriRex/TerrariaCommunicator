@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45;netcoreapp3.1</TargetFrameworks>
+    <RootNamespace>TerrariaCommunicator_NetworkPlugin</RootNamespace>
+    <LangVersion>8.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Communicator\Communicator\Communicator.csproj" />
+    <ProjectReference Include="..\..\DiscordBot\DiscordBotPluginBase\DiscordBotPluginBase.csproj" />
+  </ItemGroup>
+
+</Project>
