@@ -12,6 +12,7 @@ namespace TerrariaCommunicator_NetworkPlugin
 
         public string Description { get; set; } = "Used to communicate with a terraria game server";
         public IDiscordInterface DiscordInterface { get; set; }
+        public Client Client { get; set; }
 
         public void OnPacketReceived(IPacket packet)
         {
@@ -34,9 +35,16 @@ namespace TerrariaCommunicator_NetworkPlugin
             return message.Replace("´", "");
         }
 
-        public void OnDiscordMessageReceived(string message, string username)
+        public void OnDiscordMessageReceived(string message, string username, string discriminator)
         {
-
+            Client.SendPacket(new DiscordMessagePacket() {
+                PacketData = new DiscordMessagePacket.Content
+                {
+                    Discriminator = discriminator,
+                    Message = message,
+                    Username = username
+                }
+            });
         }
 
         public void Register(PacketSerializer packetSerializer)
@@ -44,6 +52,7 @@ namespace TerrariaCommunicator_NetworkPlugin
             packetSerializer.RegisterPacket<BroadcastMessagePacket>();
             packetSerializer.RegisterPacket<ChatMessagePacket>();
             packetSerializer.RegisterPacket<PlayerConnectionPacket>();
+            packetSerializer.RegisterPacket<DiscordMessagePacket>();
         }
     }
 }

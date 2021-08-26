@@ -1,21 +1,19 @@
-﻿#if TSHOCK
-extern alias TShockAssemblies;
-
-using TShockAssemblies::Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using System;
 using TerrariaCommunicator_NetworkPlugin.Managers;
 using TerrariaCommunicator_NetworkPlugin.Models;
 using TerrariaCommunicator_NetworkPlugin.Packets;
-using TShockAssemblies::Terraria;
-using TShockAssemblies::TerrariaApi.Server;
-using TShockAssemblies::TShockAPI;
-using Utils = TShockAssemblies::TShockAPI.Utils;
+using Terraria;
+using TerrariaApi.Server;
+using TShockAPI;
+using Utils = TShockAPI.Utils;
 
-namespace TerrariaCommunicator
+namespace TerrariaCommunicator_TShock
 {
+    [ApiVersion(2, 1)]
     public class TShockPlugin : TerrariaPlugin
     {
-        public override string Name => "Communicator";
+        public override string Name => "TerrariaCommunicator";
         public override Version Version => new Version(1, 0, 0);
         public override string Author => "AuriRex";
         public override string Description => "Description here TODO";
@@ -28,6 +26,7 @@ namespace TerrariaCommunicator
         public override void Initialize()
         {
             CommunicationManager.Instance.Initialize();
+            CommunicationManager.Instance.OnMessageReceivedEvent += Instance_OnMessageReceivedEvent;
 
             ServerApi.Hooks.ServerJoin.Register(this, OnServerJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
@@ -36,14 +35,22 @@ namespace TerrariaCommunicator
             ServerApi.Hooks.ServerBroadcast.Register(this, OnServerBroadcast);
         }
 
+        private void Instance_OnMessageReceivedEvent(DiscordMessagePacket.Content content)
+        {
+            SendMsg($"[c/7289DA:<D>] {content.Username} [c/7289DA:>] {content.Message}");
+        }
+
         private void OnServerBroadcast(ServerBroadcastEventArgs args)
         {
             if (args != null)
             {
                 if (args.Message == null) return;
                 if (args.Color == null) return;
+                Console.WriteLine($"Broadcast: {args.Message}");
 
-                CommunicationManager.Instance.SendPacket(new BroadcastMessagePacket()
+                var str = args.Message.ToString().Split(new char[] { ':' }, 2);
+                if (str.Length > 1 && Ignore.Player.Name == str[0] && Ignore.Text == str[1].Substring(1)) return;
+                CommunicationManager.Instance?.SendPacket(new BroadcastMessagePacket()
                 {
                     PacketData = new BroadcastMessagePacket.Content
                     {
@@ -67,8 +74,14 @@ namespace TerrariaCommunicator
 
         private void OnGamePostInitialize(EventArgs args)
         {
-            //AsynchronousSocketSender.Send("GamePostInitialize: true");
-            // TODO
+            CommunicationManager.Instance?.SendPacket(new BroadcastMessagePacket()
+            {
+                PacketData = new BroadcastMessagePacket.Content
+                {
+                    Message = "Server online!",
+                    Color = new ColorStruct { R = 0, G = 255, B = 0 }
+                }
+            });
         }
 
         public void SendMsg(string msg)
@@ -88,7 +101,7 @@ namespace TerrariaCommunicator
             return TShock.Players;
         }
 
-        public string getItemName(int id)
+        public string GetItemName(int id)
         {
             try
             {
@@ -100,7 +113,7 @@ namespace TerrariaCommunicator
             }
         }
 
-        public string getPrefixName(int id)
+        public string GetPrefixName(int id)
         {
             try
             {
@@ -119,8 +132,8 @@ namespace TerrariaCommunicator
                 TSPlayer ply = TShock.Players[args.Who];
                 if (ply != null)
                 {
-                    Console.WriteLine($"ServerJoin: {TShock.Players[args.Who].Name}");
-                    CommunicationManager.Instance.SendPacket(new PlayerConnectionPacket()
+                    Console.WriteLine($"ServerJoin: {ply.Name}");
+                    CommunicationManager.Instance?.SendPacket(new PlayerConnectionPacket()
                     {
                         PacketData = new PlayerConnectionPacket.Content
                         {
@@ -139,7 +152,7 @@ namespace TerrariaCommunicator
                 TSPlayer ply = TShock.Players[args.Who];
                 if (ply != null)
                 {
-                    CommunicationManager.Instance.SendPacket(new PlayerConnectionPacket()
+                    CommunicationManager.Instance?.SendPacket(new PlayerConnectionPacket()
                     {
                         PacketData = new PlayerConnectionPacket.Content
                         {
@@ -151,6 +164,12 @@ namespace TerrariaCommunicator
             }
         }
 
+        private class IgnoreThis
+        {
+            public TSPlayer Player { get; set; }
+            public string Text { get; set; }
+        }
+        private IgnoreThis Ignore = new IgnoreThis();
         void OnServerChat(ServerChatEventArgs args)
         {
             if (args != null)
@@ -158,13 +177,23 @@ namespace TerrariaCommunicator
                 TSPlayer ply = TShock.Players[args.Who];
                 if (ply != null)
                 {
-                    CommunicationManager.Instance.SendPacket(new ChatMessagePacket() {
+                    Console.WriteLine($"Chat: {args.Text}");
+
+                    if (args.Text.StartsWith("/"))
+                    {
+                        // Maybe add command packet, idk
+                        return;
+                    }
+                    CommunicationManager.Instance?.SendPacket(new ChatMessagePacket() {
                         PacketData = new ChatMessagePacket.Content
                         {
                             Message = args.Text,
                             PlayerInfo = CreatePlayerInfo(ply)
                         }
                     });
+
+                    Ignore.Player = ply;
+                    Ignore.Text = args.Text;
                 }
             }
         }
@@ -198,4 +227,3 @@ namespace TerrariaCommunicator
         }
     }
 }
-#endif
