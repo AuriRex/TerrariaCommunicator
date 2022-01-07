@@ -23,16 +23,52 @@ namespace TerrariaCommunicator_TShock
             
         }
 
+        public const string kPermission = "tcom.reload";
+
         public override void Initialize()
         {
             CommunicationManager.Instance.Initialize();
             CommunicationManager.Instance.OnMessageReceivedEvent += Instance_OnMessageReceivedEvent;
+            CommunicationManager.Instance.OnDisconnectedEvent += Instance_OnDisconnectedEvent;
+
+            var cmd = new Command(kPermission, ReconnectCommand, "reconnect-coms");
+            cmd.AllowServer = true;
+            Commands.ChatCommands.Add(cmd);
+
+            cmd = new Command(kPermission, DisconnectCommand, "disconnect-coms");
+            cmd.AllowServer = true;
+            Commands.ChatCommands.Add(cmd);
 
             ServerApi.Hooks.ServerJoin.Register(this, OnServerJoin);
             ServerApi.Hooks.ServerLeave.Register(this, OnServerLeave);
             ServerApi.Hooks.ServerChat.Register(this, OnServerChat);
             ServerApi.Hooks.GamePostInitialize.Register(this, OnGamePostInitialize);
             ServerApi.Hooks.ServerBroadcast.Register(this, OnServerBroadcast);
+        }
+
+
+        private void Instance_OnDisconnectedEvent()
+        {
+            Console.WriteLine("Disconnected from discord!");
+        }
+
+        private void ReconnectCommand(CommandArgs args)
+        {
+            if (args.Player == TSPlayer.Server || args.Player.HasPermission(kPermission))
+            {
+                Console.WriteLine("Trying to reconnect ...");
+                CommunicationManager.Instance.TryConnect();
+            }
+           
+        }
+
+        private void DisconnectCommand(CommandArgs args)
+        {
+            if (args.Player == TSPlayer.Server || args.Player.HasPermission(kPermission))
+            {
+                Console.WriteLine("Trying to disconnect ...");
+                CommunicationManager.Instance.TryDisconnect();
+            }
         }
 
         private void Instance_OnMessageReceivedEvent(DiscordMessagePacket.Content content)
