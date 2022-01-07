@@ -1,0 +1,3 @@
+[submodule "DiscordBot"]
+	path = DiscordBot
+	url = https://github.com/AuriRex/DiscordBot
