@@ -7,6 +7,8 @@ using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
 using Utils = TShockAPI.Utils;
+using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace TerrariaCommunicator_TShock
 {
@@ -82,10 +84,12 @@ namespace TerrariaCommunicator_TShock
             {
                 if (args.Message == null) return;
                 if (args.Color == null) return;
-                Console.WriteLine($"Broadcast: {args.Message}");
 
                 var str = args.Message.ToString().Split(new char[] { ':' }, 2);
                 if (str.Length > 1 && Ignore.Player.Name == str[0] && Ignore.Text == str[1].Substring(1)) return;
+
+                Console.WriteLine($"Broadcast: {args.Message}");
+
                 CommunicationManager.Instance?.SendPacket(new BroadcastMessagePacket()
                 {
                     PacketData = new BroadcastMessagePacket.Content
@@ -205,7 +209,11 @@ namespace TerrariaCommunicator_TShock
             public TSPlayer Player { get; set; }
             public string Text { get; set; }
         }
-        private IgnoreThis Ignore = new IgnoreThis();
+
+        private IgnoreThis Ignore { get; set; } = new IgnoreThis();
+
+        public Regex ItemTagRegex { get; } = new Regex(@"\[i(\/[ps]\d+)?\:\d+\:?\]");
+
         void OnServerChat(ServerChatEventArgs args)
         {
             if (args != null)
@@ -213,17 +221,58 @@ namespace TerrariaCommunicator_TShock
                 TSPlayer ply = TShock.Players[args.Who];
                 if (ply != null)
                 {
-                    Console.WriteLine($"Chat: {args.Text}");
+                    if (string.IsNullOrWhiteSpace(args.Text)) return;
+
+                    if (args.Text.Length > 3700) return;
 
                     if (args.Text.StartsWith("/"))
                     {
                         // Maybe add command packet, idk
                         return;
                     }
+
+                    var matches = ItemTagRegex.Matches(args.Text);
+
+                    var text = args.Text;
+
+                    var listOfUniqueItemTags = new List<string>();
+                    foreach (Match match in matches)
+                    {
+                        if (!listOfUniqueItemTags.Contains(match.Value))
+                            listOfUniqueItemTags.Add(match.Value);
+                    }
+
+                    foreach (string itemTag in listOfUniqueItemTags)
+                    {
+                        try
+                        {
+                            var item = TShock.Utils.GetItemFromTag(itemTag);
+
+                            if (item == null) continue;
+
+                            string itemTagReplacementString = $"[{item.Name}";
+
+                            if (item.stack > 1)
+                            {
+                                itemTagReplacementString += $" ({item.stack})";
+                            }
+
+                            itemTagReplacementString += "]";
+
+                            text = text.Replace(itemTag, itemTagReplacementString);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed to parse item tag \"{itemTag}\" - {ex}: {ex.Message}");
+                        }
+                    }
+
+                    Console.WriteLine($"Chat: {text}");
+
                     CommunicationManager.Instance?.SendPacket(new ChatMessagePacket() {
                         PacketData = new ChatMessagePacket.Content
                         {
-                            Message = args.Text,
+                            Message = text,
                             PlayerInfo = CreatePlayerInfo(ply)
                         }
                     });
