@@ -27,9 +27,9 @@ namespace TerrariaCommunicator_TShock
 
         public override void Initialize()
         {
-            CommunicationManager.Instance.Initialize();
             CommunicationManager.Instance.OnMessageReceivedEvent += Instance_OnMessageReceivedEvent;
             CommunicationManager.Instance.OnDisconnectedEvent += Instance_OnDisconnectedEvent;
+            CommunicationManager.Instance.Initialize();
 
             var cmd = new Command(kPermission, ReconnectCommand, "reconnect-coms");
             cmd.AllowServer = true;
