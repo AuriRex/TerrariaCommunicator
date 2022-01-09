@@ -8,14 +8,144 @@
     <LangVersion>7.3</LangVersion>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
-  <Target Name="BuildMod" AfterTargets="Build">
-    <Exec Command="&quot;$(tMLBuildServerPath)&quot; -build $(ProjectDir) -eac $(TargetPath) -define &quot;$(DefineConstants)&quot; -unsafe $(AllowUnsafeBlocks)" />
-  </Target>
+  
   <ItemGroup>
     <PackageReference Include="tModLoader.CodeAssist" Version="0.1.*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DiscordBot\DiscordBotPluginBase\DiscordBotPluginBase.csproj" />
-    <ProjectReference Include="..\TerrariaCommunicator-NetworkPlugin\TerrariaCommunicator-NetworkPlugin.csproj" />
+    <ProjectReference Include="..\DiscordBot\DiscordBotPluginBase\DiscordBotPluginBase.csproj">
+      <Private>true</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\TerrariaCommunicator-NetworkPlugin\TerrariaCommunicator-NetworkPlugin.csproj">
+      <Private>true</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="AfterBuildCopy" BeforeTargets="BuildMod">
+    <Copy SourceFiles="bin\Release\net45\Communicator.dll" DestinationFolder="lib\" ContinueOnError="true" />
+    <Copy SourceFiles="bin\Release\net45\DiscordBotPluginBase.dll" DestinationFolder="lib\" ContinueOnError="true" />
+    <Copy SourceFiles="bin\Release\net45\TerrariaCommunicator-NetworkPlugin.dll" DestinationFolder="lib\" ContinueOnError="true" />
+  </Target>
+  
+  <ItemGroup>
+    <Reference Update="Ionic.Zip.Reduced">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="log4net">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Microsoft.Xna.Framework">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Microsoft.Xna.Framework.Game">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Microsoft.Xna.Framework.Graphics">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Microsoft.Xna.Framework.Xact">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Mono.Cecil">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Mono.Cecil.Mdb">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Mono.Cecil.Pdb">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="MonoMod.RuntimeDetour">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="MonoMod.Utils">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="MP3Sharp">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Newtonsoft.Json">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="NVorbis">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="ReLogic">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Steamworks.NET">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="BuildMod" AfterTargets="Build">
+    <Exec Command="&quot;$(tMLBuildServerPath)&quot; -build $(ProjectDir) -eac $(TargetPath) -define &quot;$(DefineConstants)&quot; -unsafe $(AllowUnsafeBlocks)" />
+  </Target>
+
+  <ItemGroup>
+    <Reference Update="System">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Core">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Data">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Drawing">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.IO.Compression.FileSystem">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Numerics">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Runtime.Serialization">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="System.ValueTuple">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Xml">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Update="System.Xml.Linq">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="Terraria">
+      <Private>false</Private>
+    </Reference>
+    <Reference Update="TerrariaHooks">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="lib\" />
   </ItemGroup>
 </Project>

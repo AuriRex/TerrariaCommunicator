@@ -1,6 +1,7 @@
 ﻿using Communicator.Interfaces;
 using Communicator.Net;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using TerrariaCommunicator_NetworkPlugin.Packets;
 
@@ -32,17 +33,19 @@ namespace TerrariaCommunicator_NetworkPlugin.Managers
             }
         }
 
-        public const string kConfigFilePath = "./tshock/TerrariaCommunicatorConfig.json";
-        
+        public const string kTShockConfigFilePath = "./tshock/TerrariaCommunicatorConfig.json";
+        public const string kTModLoaderConfigFilePath = "./userdata/TerrariaCommunicatorConfig.json";
+        public string ConfigFilePath { get; set; } = kTShockConfigFilePath;
+
         public Action<string> LogAction { get; set; }
 
         private GameserverClient _client;
         private ComPlugin _comPluginInstance;
 
-        public void Initialize()
+        public void Initialize(bool tModLoader = false)
         {
-            // TODO: remove
-            LogAction = (s) => { Console.WriteLine(s); };
+            if (tModLoader)
+                ConfigFilePath = kTModLoaderConfigFilePath;
 
             TryConnect();
         }
@@ -53,31 +56,45 @@ namespace TerrariaCommunicator_NetworkPlugin.Managers
 
             if(_comPluginInstance == null) _comPluginInstance = new ComPlugin();
 
-            var conf = GameserverClient.GSConfig.LoadFromFile(kConfigFilePath);
-
-            _ = Task.Run(() => {
-
-                PacketSerializer packetSerializer = new PacketSerializer();
-
-                _comPluginInstance.Register(packetSerializer);
-                try
+            GameserverClient.GSConfig config = null;
+            try
+            {
+                if(!Directory.Exists(Path.GetDirectoryName(ConfigFilePath)))
                 {
-                    _client = GameserverClient.Create(conf, _comPluginInstance.GameIdentification, packetSerializer, LogActionMethod);
+                    Directory.CreateDirectory(Path.GetDirectoryName(ConfigFilePath));
+                }
+                config = GameserverClient.GSConfig.LoadFromFile(ConfigFilePath);
 
-                    if (_client != null)
+                _ = Task.Run(() => {
+
+                    PacketSerializer packetSerializer = new PacketSerializer();
+
+                    _comPluginInstance.Register(packetSerializer);
+                    try
                     {
-                        _client.PacketReceivedEvent += _client_PacketReceivedEvent;
-                        _client.DisconnectedEvent += _client_DisconnectedEvent;
-                        LogAction?.Invoke("Connected!");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogAction?.Invoke($"An error occurred trying to connect: {ex.Message}");
-                }
-            });
+                        _client = GameserverClient.Create(config, _comPluginInstance.GameIdentification, packetSerializer, LogActionMethod);
 
-            GameserverClient.GSConfig.SaveToFile(kConfigFilePath, conf);
+                        if (_client != null)
+                        {
+                            _client.PacketReceivedEvent += _client_PacketReceivedEvent;
+                            _client.DisconnectedEvent += _client_DisconnectedEvent;
+                            LogAction?.Invoke("Connected!");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogAction?.Invoke($"An error occurred trying to connect: {ex.Message}");
+                    }
+                });
+            }
+            catch(ArgumentException)
+            {
+
+            }
+            finally
+            {
+                GameserverClient.GSConfig.SaveToFile(ConfigFilePath, config ?? new GameserverClient.GSConfig());
+            }
         }
 
         private void _client_DisconnectedEvent(Communicator.Net.EventArgs.ClientDisconnectedEventArgs args)

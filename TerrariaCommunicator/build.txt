@@ -1,3 +1,4 @@
 displayName = Communicator
 author = AuriRex
 version = 0.1
+dllReferences = TerrariaCommunicator-NetworkPlugin, Communicator, DiscordBotPluginBase
