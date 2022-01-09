@@ -1,8 +1,11 @@
 ﻿using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
 using System.Threading;
 using Terraria;
+using Terraria.GameContent.UI.Chat;
 using Terraria.ModLoader;
 using Terraria.UI.Chat;
 using TerrariaCommunicator.Extensions;
@@ -25,7 +28,7 @@ namespace TerrariaCommunicator
             if (!Main.dedServ) return;
 
             Logger.Info($"{nameof(TerrariaCommunicatorMod)} loading!");
-            
+
             CommunicationManager.Instance.OnMessageReceivedEvent += CommunicationManager_OnMessageReceivedEvent;
             CommunicationManager.Instance.OnDisconnectedEvent += CommunicationManager_OnDisconnectedEvent;
             CommunicationManager.Instance.LogAction = Logger.Info;
@@ -65,7 +68,15 @@ namespace TerrariaCommunicator
                 return;
             }
 
-            
+            var textSnippets = ChatManager.ParseMessage(text, Color.White);
+
+            var sb = new StringBuilder();
+            foreach(var snip in textSnippets)
+            {
+                sb.Append(snip.Text);
+            }
+
+            text = sb.ToString();
 
             CommunicationManager.Instance?.SendPacket(new ChatMessagePacket()
             {
